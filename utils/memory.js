@@ -1,5 +1,6 @@
 const { JSONFilePreset } = require('lowdb/node');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 const addMetadata = (message) => ({
   ...message,
@@ -15,7 +16,8 @@ const removeMetadata = (message) => {
 const defaultData = { messages: [] };
 
 const getDb = async () => {
-  const db = await JSONFilePreset('db.json', defaultData);
+  const dbPath = path.join(__dirname, '..', 'db.json');
+  const db = await JSONFilePreset(dbPath, defaultData);
   return db;
 };
 
@@ -36,8 +38,19 @@ const clearMessages = async () => {
   await db.write();
 };
 
+const saveToolResponse = async (toolName, toolResult) => {
+  const db = await getDb();
+  db.data.messages.push(addMetadata({
+    role: 'function',
+    name: toolName,
+    parts: [{ text: JSON.stringify(toolResult) }],
+  }));
+  await db.write();
+};
+
 module.exports = {
   addMessages,
   getMessages,
   clearMessages,
+  saveToolResponse,
 };

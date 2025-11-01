@@ -17,7 +17,7 @@ class AgentInterface {
     console.log('\n╔════════════════════════════════════════════════════════════╗');
     console.log('║              🤖 AI AGENT INTERFACE v1.0 🤖                 ║');
     console.log('╚════════════════════════════════════════════════════════════╝\n');
-    console.log('💡 Commands: Type your message or "exit" to quit\n');
+    console.log('💡 Commands: "exit" to quit | "clear" to reset history\n');
     console.log('─'.repeat(60));
   }
 
@@ -37,6 +37,43 @@ class AgentInterface {
 
   printSystem(message) {
     console.log(`\n⚙️  ${message}\n`);
+  }
+
+  showLoader(message = 'Thinking...') {
+    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    let i = 0;
+    
+    const interval = setInterval(() => {
+      readline.clearLine(process.stdout, 0);
+      readline.cursorTo(process.stdout, 0);
+      process.stdout.write(`${frames[i]} ${message}`);
+      i = (i + 1) % frames.length;
+    }, 80);
+    
+    return {
+      stop: () => {
+        clearInterval(interval);
+        readline.clearLine(process.stdout, 0);
+        readline.cursorTo(process.stdout, 0);
+      },
+    };
+  }
+
+  logMessage(message) {
+    if (message.role === 'user') {
+      console.log(`\n💬 ${message.parts[0].text}`);
+    } else if (message.role === 'model') {
+      if (message.parts[0].functionCall) {
+        const fc = message.parts[0].functionCall;
+        console.log(`\n🔧 Tool Call: ${fc.name}`);
+        console.log(`   Args: ${JSON.stringify(fc.args, null, 2)}`);
+      } else {
+        console.log(`\n🤖 Agent: ${message.parts[0].text}`);
+      }
+    } else if (message.role === 'function') {
+      console.log(`\n📦 Tool Result: ${message.parts[0].text}`);
+    }
+    console.log('─'.repeat(60));
   }
 
   async getUserInput(prompt = '\n💬 ') {

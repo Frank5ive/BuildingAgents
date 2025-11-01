@@ -19,4 +19,43 @@ async function startChat() {
   });
 }
 
-module.exports = { generateContent, startChat };
+async function runLLM({ messages, tools }) {
+  const modelConfig = { 
+    model: "gemini-2.5-flash",
+  };
+  
+  if (tools && tools.length > 0) {
+    modelConfig.tools = tools;
+  }
+  
+  const model = genAI.getGenerativeModel(modelConfig);
+  
+  const chat = model.startChat({
+    history: messages.slice(0, -1),
+  });
+  
+  const lastMessage = messages[messages.length - 1];
+  const result = await chat.sendMessage(lastMessage.parts[0].text);
+  const response = result.response;
+  
+  const functionCalls = response.functionCalls();
+  
+  if (functionCalls && functionCalls.length > 0) {
+    return {
+      role: 'model',
+      parts: functionCalls.map(fc => ({
+        functionCall: {
+          name: fc.name,
+          args: fc.args,
+        },
+      })),
+    };
+  }
+  
+  return {
+    role: 'model',
+    parts: [{ text: response.text() }],
+  };
+}
+
+module.exports = { generateContent, startChat, runLLM };

@@ -71,7 +71,8 @@ class AgentInterface {
         console.log(`\n🤖 Agent: ${message.parts[0].text}`);
       }
     } else if (message.role === 'function') {
-      console.log(`\n📦 Tool Result: ${message.parts[0].text}`);
+      const result = message.parts[0].functionResponse?.response?.content || message.parts[0].text;
+      console.log(`\n📦 Tool Result: ${result}`);
     }
     console.log('─'.repeat(60));
   }

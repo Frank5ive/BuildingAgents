@@ -185,6 +185,273 @@ const tools = [
       return `Generated password: ${password}`;
     },
   },
+  // API-based tools
+  {
+    name: 'get_weather',
+    description: 'Get current weather information for a city',
+    parameters: z.object({
+      city: z.string().describe('City name (e.g., "London", "New York")'),
+    }),
+    execute: async ({ city }) => {
+      try {
+        const response = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+        if (!response.ok) return `Error: Could not fetch weather for ${city}`;
+        
+        const data = await response.json();
+        const current = data.current_condition[0];
+        const location = data.nearest_area[0];
+        
+        return `Weather in ${location.areaName[0].value}, ${location.country[0].value}:
+- Temperature: ${current.temp_C}°C (${current.temp_F}°F)
+- Feels Like: ${current.FeelsLikeC}°C
+- Condition: ${current.weatherDesc[0].value}
+- Humidity: ${current.humidity}%
+- Wind: ${current.windspeedKmph} km/h ${current.winddir16Point}
+- Visibility: ${current.visibility} km`;
+      } catch (error) {
+        return `Error fetching weather: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_random_fact',
+    description: 'Get a random interesting fact',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch('https://uselessfacts.jsph.pl/random.json?language=en');
+        if (!response.ok) return 'Error: Could not fetch fact';
+        
+        const data = await response.json();
+        return `Random Fact: ${data.text}`;
+      } catch (error) {
+        return `Error fetching fact: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_advice',
+    description: 'Get a random piece of advice',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch('https://api.adviceslip.com/advice');
+        if (!response.ok) return 'Error: Could not fetch advice';
+        
+        const data = await response.json();
+        return `Advice: ${data.slip.advice}`;
+      } catch (error) {
+        return `Error fetching advice: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_joke',
+    description: 'Get a random programming joke',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch('https://official-joke-api.appspot.com/random_joke');
+        if (!response.ok) return 'Error: Could not fetch joke';
+        
+        const data = await response.json();
+        return `${data.setup}\n\n${data.punchline}`;
+      } catch (error) {
+        return `Error fetching joke: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_dog_image',
+    description: 'Get a random dog image URL',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch('https://dog.ceo/api/breeds/image/random');
+        if (!response.ok) return 'Error: Could not fetch dog image';
+        
+        const data = await response.json();
+        return `Random dog image: ${data.message}`;
+      } catch (error) {
+        return `Error fetching dog image: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_cat_fact',
+    description: 'Get a random cat fact',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch('https://catfact.ninja/fact');
+        if (!response.ok) return 'Error: Could not fetch cat fact';
+        
+        const data = await response.json();
+        return `Cat Fact: ${data.fact}`;
+      } catch (error) {
+        return `Error fetching cat fact: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_quote',
+    description: 'Get a random inspirational quote',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch('https://api.quotable.io/random');
+        if (!response.ok) return 'Error: Could not fetch quote';
+        
+        const data = await response.json();
+        return `"${data.content}"\n\n— ${data.author}`;
+      } catch (error) {
+        return `Error fetching quote: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_crypto_price',
+    description: 'Get current cryptocurrency price in USD',
+    parameters: z.object({
+      crypto: z.string().describe('Cryptocurrency symbol (e.g., "bitcoin", "ethereum", "dogecoin")'),
+    }),
+    execute: async ({ crypto }) => {
+      try {
+        const cryptoLower = crypto.toLowerCase();
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoLower}&vs_currencies=usd&include_24hr_change=true`);
+        if (!response.ok) return `Error: Could not fetch price for ${crypto}`;
+        
+        const data = await response.json();
+        if (!data[cryptoLower]) return `Error: Cryptocurrency "${crypto}" not found`;
+        
+        const price = data[cryptoLower].usd;
+        const change = data[cryptoLower].usd_24h_change;
+        const changeStr = change >= 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`;
+        
+        return `${crypto.toUpperCase()} Price:
+- Current: $${price.toLocaleString()}
+- 24h Change: ${changeStr}`;
+      } catch (error) {
+        return `Error fetching crypto price: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_github_user',
+    description: 'Get information about a GitHub user',
+    parameters: z.object({
+      username: z.string().describe('GitHub username'),
+    }),
+    execute: async ({ username }) => {
+      try {
+        const response = await fetch(`https://api.github.com/users/${username}`);
+        if (!response.ok) return `Error: GitHub user "${username}" not found`;
+        
+        const data = await response.json();
+        return `GitHub User: ${data.login}
+- Name: ${data.name || 'N/A'}
+- Bio: ${data.bio || 'No bio'}
+- Public Repos: ${data.public_repos}
+- Followers: ${data.followers}
+- Following: ${data.following}
+- Profile: ${data.html_url}`;
+      } catch (error) {
+        return `Error fetching GitHub user: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_ip_info',
+    description: 'Get information about an IP address or your current IP',
+    parameters: z.object({
+      ip: z.string().describe('IP address to lookup (leave empty for current IP)'),
+    }),
+    execute: async ({ ip }) => {
+      try {
+        const url = ip ? `https://ipapi.co/${ip}/json/` : 'https://ipapi.co/json/';
+        const response = await fetch(url);
+        if (!response.ok) return 'Error: Could not fetch IP information';
+        
+        const data = await response.json();
+        if (data.error) return `Error: ${data.reason}`;
+        
+        return `IP Information:
+- IP: ${data.ip}
+- City: ${data.city}
+- Region: ${data.region}
+- Country: ${data.country_name}
+- ISP: ${data.org}
+- Timezone: ${data.timezone}`;
+      } catch (error) {
+        return `Error fetching IP info: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'get_reddit_posts',
+    description: 'Get top posts from a Reddit subreddit',
+    parameters: z.object({
+      subreddit: z.string().describe('Subreddit name (e.g., "programming", "javascript", "news")'),
+      limit: z.string().describe('Number of posts to fetch (default: 5, max: 25)'),
+    }),
+    execute: async ({ subreddit, limit }) => {
+      try {
+        const postLimit = Math.min(parseInt(limit) || 5, 25);
+        const response = await fetch(`https://www.reddit.com/r/${subreddit}/hot.json?limit=${postLimit}`);
+        if (!response.ok) return `Error: Could not fetch posts from r/${subreddit}`;
+        
+        const data = await response.json();
+        const posts = data.data.children;
+        
+        if (posts.length === 0) return `No posts found in r/${subreddit}`;
+        
+        let result = `Top posts from r/${subreddit}:\n\n`;
+        posts.forEach((post, index) => {
+          const p = post.data;
+          result += `${index + 1}. ${p.title}\n`;
+          result += `   👍 ${p.ups} upvotes | 💬 ${p.num_comments} comments\n`;
+          result += `   🔗 https://reddit.com${p.permalink}\n\n`;
+        });
+        
+        return result.trim();
+      } catch (error) {
+        return `Error fetching Reddit posts: ${error.message}`;
+      }
+    },
+  },
+  {
+    name: 'search_reddit',
+    description: 'Search Reddit for posts across all subreddits',
+    parameters: z.object({
+      query: z.string().describe('Search query'),
+      limit: z.string().describe('Number of results (default: 5, max: 25)'),
+    }),
+    execute: async ({ query, limit }) => {
+      try {
+        const postLimit = Math.min(parseInt(limit) || 5, 25);
+        const encodedQuery = encodeURIComponent(query);
+        const response = await fetch(`https://www.reddit.com/search.json?q=${encodedQuery}&limit=${postLimit}&sort=relevance`);
+        if (!response.ok) return `Error: Could not search Reddit for "${query}"`;
+        
+        const data = await response.json();
+        const posts = data.data.children;
+        
+        if (posts.length === 0) return `No results found for "${query}"`;
+        
+        let result = `Reddit search results for "${query}":\n\n`;
+        posts.forEach((post, index) => {
+          const p = post.data;
+          result += `${index + 1}. ${p.title}\n`;
+          result += `   📍 r/${p.subreddit} | 👍 ${p.ups} upvotes | 💬 ${p.num_comments} comments\n`;
+          result += `   🔗 https://reddit.com${p.permalink}\n\n`;
+        });
+        
+        return result.trim();
+      } catch (error) {
+        return `Error searching Reddit: ${error.message}`;
+      }
+    },
+  },
 ];
 
 const runTool = async (toolName, args) => {

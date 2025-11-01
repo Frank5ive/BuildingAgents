@@ -3,16 +3,18 @@ const { runTool, getToolDeclarations } = require('./tools');
 const { addMessages, getMessages, saveToolResponse } = require('./memory');
 
 const runAgent = async ({ userMessage, ui }) => {
-  await addMessages([
-    {
-      role: 'user',
-      parts: [{ text: userMessage }],
-    },
-  ]);
-
-  const loader = ui.showLoader('Thinking...');
-
+  let loader;
+  
   try {
+    await addMessages([
+      {
+        role: 'user',
+        parts: [{ text: userMessage }],
+      },
+    ]);
+
+    loader = ui.showLoader('Thinking...');
+
     const history = await getMessages();
     const tools = getToolDeclarations();
     
@@ -35,36 +37,85 @@ const runAgent = async ({ userMessage, ui }) => {
       try {
         const toolResult = await runTool(functionCall.name, functionCall.args);
         
-        await saveToolResponse(functionCall.name, toolResult);
+        const functionResponse = {
+          role: 'function',
+          parts: [{
+            functionResponse: {
+              name: functionCall.name,
+              response: {
+                content: toolResult,
+              },
+            },
+          }],
+        };
+        
+        await addMessages([functionResponse]);
         
         toolLoader.stop();
-        ui.logMessage({
-          role: 'function',
-          name: functionCall.name,
-          parts: [{ text: JSON.stringify(toolResult) }],
-        });
+        ui.logMessage(functionResponse);
         
         // Get final response after tool execution
         const finalLoader = ui.showLoader('Generating final response...');
-        const finalHistory = await getMessages();
-        const finalResponse = await runLLM({
-          messages: finalHistory,
-          tools: tools,
-        });
         
-        await addMessages([finalResponse]);
-        
-        finalLoader.stop();
-        ui.logMessage(finalResponse);
-      } catch (error) {
+        try {
+          const finalHistory = await getMessages();
+          const finalResponse = await runLLM({
+            messages: finalHistory,
+            tools: tools,
+          });
+          
+          await addMessages([finalResponse]);
+          
+          finalLoader.stop();
+          ui.logMessage(finalResponse);
+        } catch (finalError) {
+          finalLoader.stop();
+          
+          // If final response fails, at least show the tool result
+          ui.printError(`Could not generate final response: ${finalError.message}`);
+          ui.printSystem(`Tool returned: ${toolResult}`);
+        }
+      } catch (toolError) {
         toolLoader.stop();
-        ui.printError(`Tool execution failed: ${error.message}`);
+        
+        // Save error as function response so conversation state is maintained
+        const errorResponse = {
+          role: 'function',
+          parts: [{
+            functionResponse: {
+              name: functionCall.name,
+              response: {
+                content: `Error: ${toolError.message}`,
+              },
+            },
+          }],
+        };
+        
+        await addMessages([errorResponse]);
+        ui.printError(`Tool execution failed: ${toolError.message}`);
       }
     }
 
     return getMessages();
   } catch (error) {
-    loader.stop();
+    if (loader) loader.stop();
+    
+    // Try to recover by checking if we have orphaned function calls
+    try {
+      const messages = await getMessages();
+      const lastMsg = messages[messages.length - 1];
+      
+      // If last message was a function call, remove it to clean up state
+      if (lastMsg?.role === 'model' && lastMsg.parts[0]?.functionCall) {
+        ui.printError(`Removing incomplete function call to recover state`);
+        const db = await require('./memory').getDb();
+        db.data.messages.pop();
+        await db.write();
+      }
+    } catch (cleanupError) {
+      // Cleanup failed, but don't crash
+    }
+    
     throw error;
   }
 };

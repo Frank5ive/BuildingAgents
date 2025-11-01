@@ -35,7 +35,19 @@ async function runLLM({ messages, tools }) {
   });
   
   const lastMessage = messages[messages.length - 1];
-  const result = await chat.sendMessage(lastMessage.parts[0].text);
+  
+  // Handle different message types
+  let result;
+  if (lastMessage.role === 'function') {
+    // For function responses, send the entire message
+    result = await chat.sendMessage(lastMessage.parts);
+  } else if (lastMessage.parts[0].text) {
+    // For user messages with text
+    result = await chat.sendMessage(lastMessage.parts[0].text);
+  } else {
+    throw new Error('Invalid message format');
+  }
+  
   const response = result.response;
   
   const functionCalls = response.functionCalls();

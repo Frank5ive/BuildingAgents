@@ -256,9 +256,11 @@ MODE=chat                    # or 'agent'
 
 ## 📄 License
 
-ISC
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
+
+**Frank Gondwe**
 
 Built with modern JavaScript practices, demonstrating production-ready code organization, error handling, and extensible architecture patterns.
 

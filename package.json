@@ -1,14 +1,25 @@
 {
   "name": "buildingagents",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
+  "description": "A production-ready AI agent framework with tool calling capabilities",
+  "license": "MIT",
+  "author": "Frank Gondwe",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "ai",
+    "agent",
+    "gemini",
+    "tool-calling",
+    "function-calling",
+    "chatbot",
+    "llm"
+  ],
   "dependencies": {
     "@google/genai": "^1.28.0",
     "@google/generative-ai": "^0.24.1",
